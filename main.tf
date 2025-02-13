@@ -13,7 +13,7 @@ terraform {
     bucket         = "my-terraform-statefiles"
     key            = "cloud-management/terraform.tfstate"
     region         = "eu-north-1"
-    profile        = "root/OrganizationAdministrator"
+    profile        = "root/AdministratorAccess"
     use_lockfile   = true
     dynamodb_table = "terraform.statelock.cloud-management"
   }
