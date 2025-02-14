@@ -6,9 +6,6 @@ terraform {
     }
   }
 
-  #
-  # This backend is deployed in statestorage.tf,
-  # comment this out when deploying for the first time, then adjust.
   backend "s3" {
     bucket         = ""
     key            = ""
@@ -30,4 +27,8 @@ provider "aws" {
       "iac"         = "terraform/my-multicloud-ac"
     }
   }
+}
+
+data "aws_s3_bucket" "terraform_statefiles" {
+  bucket = var.aws_statefile_bucket_name
 }
