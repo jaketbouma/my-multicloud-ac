@@ -1,36 +1,3 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 4.0"
-    }
-  }
-
-  #
-  # This backend is deployed in statestorage.tf,
-  # comment this out when deploying for the first time, then adjust.
-  backend "s3" {
-    bucket         = "my-terraform-statefiles"
-    key            = "cloud-management/terraform.tfstate"
-    region         = "eu-north-1"
-    profile        = "root/AdministratorAccess"
-    use_lockfile   = true
-    dynamodb_table = "terraform.statelock.cloud-management"
-  }
-}
-
-provider "aws" {
-  region              = var.aws_default_region
-  profile             = "root/OrganizationAdministrator"
-  allowed_account_ids = [var.aws_root_account_id]
-  default_tags {
-    tags = {
-      "environment" = "sandbox"
-      "deployment"  = "iac"
-      "iac"         = "terraform/cloud-management"
-    }
-  }
-}
 
 
 #
@@ -87,7 +54,7 @@ data "aws_iam_policy_document" "sandbox_to_root_inline" {
     actions = [
       "s3:*"
     ]
-    resources = ["arn:aws:s3:::${aws_s3_bucket.terraform_statefiles.id}/*"]
+    resources = ["arn:aws:s3:::${data.aws_s3_bucket.terraform_statefiles.id}/*"]
   }
   statement {
     actions = [
@@ -125,7 +92,6 @@ resource "aws_iam_role" "sandbox_access" {
 resource "aws_identitystore_group" "terraform_developers" {
   identity_store_id = var.aws_sso_instance_identity_store_id
   display_name      = "terraform_developers"
-  description       = "Users who can administer terraform sandboxes"
 }
 resource "aws_identitystore_group_membership" "terraform_developers_membership" {
   for_each          = toset(var.aws_idc_admin_user_ids)
@@ -154,7 +120,7 @@ resource "aws_organizations_account" "sandbox_accounts" {
 }
 resource "aws_s3_object" "sandbox_statefiles" {
   for_each = local.aws_accounts
-  bucket   = aws_s3_bucket.terraform_statefiles.id
+  bucket   = data.aws_s3_bucket.terraform_statefiles.id
   key      = "${each.key}/"
   tags = {
     "project"   = each.value.project

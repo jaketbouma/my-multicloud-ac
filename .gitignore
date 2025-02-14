@@ -21,3 +21,4 @@ terraform.rc
 # Ignore sensitive variable files
 *.tfvars
 *.tfvars.json
+state.config
