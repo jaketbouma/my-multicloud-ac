@@ -68,16 +68,37 @@ resource "aws_ssoadmin_account_assignment" "terraform_developer_to_sandboxes" {
 data "aws_iam_policy_document" "sandbox_to_root_inline" {
   statement {
     actions = [
+      "identitystore:DescribeGroup",
       "identitystore:CreateGroup",
       "identitystore:DeleteGroup",
-      "identitystore:CreateGroupMembership",
       "identitystore:UpdateGroup",
-      "identitystore:DescribeGroup"
+      "identitystore:DescribeGroupMembership",
+      "identitystore:CreateGroupMembership",
+      "identitystore:DeleteGroupMembership",
+      "identitystore:UpdateGroupMembership"
     ]
     resources = [
       "arn:aws:identitystore::${var.aws_root_account_id}:identitystore/${var.aws_sso_instance_identity_store_id}",
-      "arn:aws:identitystore:::group/*"
+      "arn:aws:identitystore:::group/*",
+      "arn:aws:identitystore:::user/*",
+      "arn:aws:identitystore:::membership/*"
     ]
+  }
+  statement {
+    actions = [
+      "sso:*",
+      #"sso:CreatePermissionSet",
+      #"sso:UpdatePermissionSet",
+      #"sso:DeletePermissionSet",
+      #"sso:DescribePermissionSet",
+    ]
+    # can narrow this down to the instance in question
+    resources = ["*"]
+    #condition {
+    #  test     = "StringEquals"
+    #  variable = "aws:ResourceTag/project"
+    #  values   = toset([for account in local.aws_accounts : account.project])
+    #}
   }
   statement {
     actions = [
@@ -111,6 +132,8 @@ data "aws_iam_policy_document" "sandbox_to_root_assume_role" {
     }
   }
 }
+
+
 resource "aws_iam_role" "sandbox_access" {
   name               = "SandboxAccess"
   description        = "Allows sandbox accounts to access IdC and statefiles in the root account"

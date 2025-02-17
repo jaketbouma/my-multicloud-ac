@@ -6,7 +6,11 @@ Terraforming foundational infra for various projects.
 - An AWS root account, organization, and Identity Access Management Instance
 - An organization node under which sandbox accounts can be deployed.
 - An Azure root account.
-- State backend resources (below)
+- State backend resources (below).
+
+## Principles
+- centralize IAM to this configuration as much as possible
+- create a throwaway account / subscription for child terraform projects, and let terraform have ultimate access to those accounts
 
 ##  State backend
 
