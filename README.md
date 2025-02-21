@@ -7,6 +7,7 @@ Terraforming foundational infra for various projects.
 - An organization node under which sandbox accounts can be deployed.
 - An Azure root account.
 - State backend resources (below).
+- In RAM/Settings in the root account check: **Enable sharing with AWS Organizations** (If you enable sharing with the accounts of your organization, you can share resources without using invitations. You can enable sharing in the organization's management account. The organization must support all features.)
 
 ## Principles
 - centralize IAM to this configuration as much as possible

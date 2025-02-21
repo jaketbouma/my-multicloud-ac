@@ -118,6 +118,12 @@ data "aws_iam_policy_document" "sandbox_to_root_inline" {
     ]
     resources = ["arn:aws:dynamodb:*:*:table/terraform.statelock.*"]
   }
+  statement {
+    actions = [
+      "Organizations:ListAccountsForParent"
+    ]
+    resources = ["*"]
+  }
 }
 data "aws_iam_policy_document" "sandbox_to_root_assume_role" {
   statement {

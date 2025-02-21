@@ -57,4 +57,3 @@ resource "aws_dynamodb_table" "sandbox_statelocks" {
     "component" = "terraform"
   }
 }
-
