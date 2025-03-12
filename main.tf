@@ -11,7 +11,6 @@ resource "aws_identitystore_group_membership" "terraform_developers_membership" 
   member_id         = each.key
 }
 
-
 #
 # Create a permission set intended for the terraform-developers group,
 # that provisions to all project accounts.
@@ -33,9 +32,9 @@ resource "aws_ssoadmin_managed_policy_attachment" "terraform_developer_gets_admi
 resource "aws_ssoadmin_permission_set_inline_policy" "terraform_developer_gets_inline" {
   instance_arn       = var.aws_sso_instance_arn
   permission_set_arn = aws_ssoadmin_permission_set.terraform_developer.arn
-  inline_policy      = data.aws_iam_policy_document.projects_can_assume_project_role_in_root.json
+  inline_policy      = data.aws_iam_policy_document.projects_assume_role_in_root.json
 }
-data "aws_iam_policy_document" "projects_can_assume_project_role_in_root" {
+data "aws_iam_policy_document" "projects_assume_role_in_root" {
   statement {
     effect = "Allow"
     actions = [
@@ -63,9 +62,43 @@ resource "aws_ssoadmin_account_assignment" "terraform_developer_to_projects" {
 #
 # Create a role in root account,
 # that trusts project accounts,
-# and gives access to statefiles via inline policy
+# and gives access to root's Identity Store and statefiles via inline policy
 
 data "aws_iam_policy_document" "project_to_root_inline" {
+  statement {
+    actions = [
+      "identitystore:DescribeGroup",
+      #"identitystore:CreateGroup",
+      #"identitystore:DeleteGroup",
+      #"identitystore:UpdateGroup",
+      "identitystore:DescribeGroupMembership",
+      #"identitystore:CreateGroupMembership",
+      #"identitystore:DeleteGroupMembership",
+      #"identitystore:UpdateGroupMembership"
+    ]
+    resources = [
+      "arn:aws:identitystore::${var.aws_root_account_id}:identitystore/${var.aws_sso_instance_identity_store_id}",
+      "arn:aws:identitystore:::group/*",
+      "arn:aws:identitystore:::user/*",
+      "arn:aws:identitystore:::membership/*"
+    ]
+  }
+  statement {
+    actions = [
+      #"sso:*",
+      #"sso:CreatePermissionSet",
+      #"sso:UpdatePermissionSet",
+      #"sso:DeletePermissionSet",
+      "sso:DescribePermissionSet",
+    ]
+    # can narrow this down to the instance in question
+    resources = ["*"]
+    #condition {
+    #  test     = "StringEquals"
+    #  variable = "aws:ResourceTag/project"
+    #  values   = toset([for account in local.aws_accounts : account.project])
+    #}
+  }
   statement {
     actions = [
       "s3:GetObject",
@@ -84,12 +117,6 @@ data "aws_iam_policy_document" "project_to_root_inline" {
     ]
     resources = ["arn:aws:dynamodb:*:*:table/terraform.statelock.*"]
   }
-  statement {
-    actions = [
-      "Organizations:ListAccountsForParent"
-    ]
-    resources = ["*"]
-  }
 }
 data "aws_iam_policy_document" "project_to_root_assume_role" {
   statement {
@@ -105,14 +132,18 @@ data "aws_iam_policy_document" "project_to_root_assume_role" {
   }
 }
 
-
 resource "aws_iam_role" "project_access" {
   name               = "TerraformProjectAccess"
-  description        = "Allows terraform project accounts to access statefiles in the root account"
+  description        = "Allows project accounts to access statefiles in the root account"
   assume_role_policy = data.aws_iam_policy_document.project_to_root_assume_role.json
-  inline_policy {
-    name   = "ProjectToRootInlinePolicy"
-    policy = data.aws_iam_policy_document.project_to_root_inline.json
-  }
 }
-
+resource "aws_iam_role_policy" "project_access" {
+  role   = aws_iam_role.project_access.name
+  policy = data.aws_iam_policy_document.project_to_root_inline.json
+}
+resource "aws_iam_role_policies_exclusive" "project_access" {
+  role_name = aws_iam_role.project_access.name
+  policy_names = [
+    aws_iam_role_policy.project_access.name
+  ]
+}
