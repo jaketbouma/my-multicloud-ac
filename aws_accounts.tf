@@ -10,17 +10,17 @@ locals {
   aws_accounts = {
     "bookstore" = {
       project = "bookstore"
-      email   = "${module.split_admin_email.parts.name}+bookstore@${module.split_admin_email.parts.domain}"
+      email   = "${module.split_admin_email.parts.name}+bookstore-001@${module.split_admin_email.parts.domain}"
     }
     "platform" = {
       project = "platform"
-      email   = "${module.split_admin_email.parts.name}+platform@${module.split_admin_email.parts.domain}"
+      email   = "${module.split_admin_email.parts.name}+platform-001@${module.split_admin_email.parts.domain}"
     }
   }
 }
 
 
-resource "aws_organizations_account" "sandbox_accounts" {
+resource "aws_organizations_account" "project_accounts" {
   for_each          = local.aws_accounts
   name              = each.key
   email             = each.value.email
@@ -32,7 +32,7 @@ resource "aws_organizations_account" "sandbox_accounts" {
   }
 }
 
-resource "aws_s3_object" "sandbox_statefiles" {
+resource "aws_s3_object" "project_statefiles" {
   for_each = local.aws_accounts
   bucket   = data.aws_s3_bucket.terraform_statefiles.id
   key      = "${each.key}/"
@@ -42,7 +42,7 @@ resource "aws_s3_object" "sandbox_statefiles" {
   }
 }
 
-resource "aws_dynamodb_table" "sandbox_statelocks" {
+resource "aws_dynamodb_table" "project_statelocks" {
   for_each       = local.aws_accounts
   name           = "terraform.statelock.${each.key}"
   read_capacity  = 5
