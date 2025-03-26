@@ -44,6 +44,15 @@ data "aws_iam_policy_document" "projects_assume_role_in_root" {
       aws_iam_role.project_access.arn
     ]
   }
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:PutBucketPolicy",
+    ]
+    resources = [
+      "arn:aws:s3:::*"
+    ]
+  }
 }
 resource "aws_ssoadmin_account_assignment" "terraform_developer_to_projects" {
   for_each     = aws_organizations_account.project_accounts
