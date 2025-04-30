@@ -1,13 +1,13 @@
 #
 # Create an Identity Store group for terraform developers
-resource "aws_identitystore_group" "terraform_developers" {
+resource "aws_identitystore_group" "cloud_developers" {
   identity_store_id = var.aws_sso_instance_identity_store_id
-  display_name      = "terraform_developers"
+  display_name      = "cloud_developers"
 }
-resource "aws_identitystore_group_membership" "terraform_developers_membership" {
+resource "aws_identitystore_group_membership" "cloud_developers_membership" {
   for_each          = toset(var.aws_idc_admin_user_ids)
   identity_store_id = var.aws_sso_instance_identity_store_id
-  group_id          = aws_identitystore_group.terraform_developers.group_id
+  group_id          = aws_identitystore_group.cloud_developers.group_id
   member_id         = each.key
 }
 
@@ -18,20 +18,20 @@ resource "aws_identitystore_group_membership" "terraform_developers_membership" 
 # and via an inline policy,
 #   permission to assume the ProjectAccess role in the root account
 
-resource "aws_ssoadmin_permission_set" "terraform_developer" {
-  name             = "TerraformDeveloperPermissionSet"
-  description      = "Gives access to terraform projects"
+resource "aws_ssoadmin_permission_set" "cloud_developer" {
+  name             = "CloudDeveloperPermissionSet"
+  description      = "Gives administrative access to cloud projects for IaC tools"
   instance_arn     = var.aws_sso_instance_arn
   session_duration = "PT8H"
 }
-resource "aws_ssoadmin_managed_policy_attachment" "terraform_developer_gets_admin" {
+resource "aws_ssoadmin_managed_policy_attachment" "cloud_developer_gets_admin" {
   instance_arn       = var.aws_sso_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.terraform_developer.arn
+  permission_set_arn = aws_ssoadmin_permission_set.cloud_developer.arn
   managed_policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
-resource "aws_ssoadmin_permission_set_inline_policy" "terraform_developer_gets_inline" {
+resource "aws_ssoadmin_permission_set_inline_policy" "cloud_developer_gets_inline" {
   instance_arn       = var.aws_sso_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.terraform_developer.arn
+  permission_set_arn = aws_ssoadmin_permission_set.cloud_developer.arn
   inline_policy      = data.aws_iam_policy_document.projects_assume_role_in_root.json
 }
 data "aws_iam_policy_document" "projects_assume_role_in_root" {
@@ -54,13 +54,13 @@ data "aws_iam_policy_document" "projects_assume_role_in_root" {
     ]
   }
 }
-resource "aws_ssoadmin_account_assignment" "terraform_developer_to_projects" {
+resource "aws_ssoadmin_account_assignment" "cloud_developer_to_projects" {
   for_each     = aws_organizations_account.project_accounts
   instance_arn = var.aws_sso_instance_arn
 
-  permission_set_arn = aws_ssoadmin_permission_set.terraform_developer.arn
+  permission_set_arn = aws_ssoadmin_permission_set.cloud_developer.arn
 
-  principal_id   = aws_identitystore_group.terraform_developers.group_id
+  principal_id   = aws_identitystore_group.cloud_developers.group_id
   principal_type = "GROUP"
 
   target_id   = each.value.id
@@ -142,7 +142,7 @@ data "aws_iam_policy_document" "project_to_root_assume_role" {
 }
 
 resource "aws_iam_role" "project_access" {
-  name               = "TerraformProjectAccess"
+  name               = "CloudProjectAccess"
   description        = "Allows project accounts to access statefiles in the root account"
   assume_role_policy = data.aws_iam_policy_document.project_to_root_assume_role.json
 }
